@@ -1,0 +1,49 @@
+body {
+    margin: 0px;
+}
+
+#heading {
+    text-align: center;
+    padding: 20px;
+    background: #333;
+    color: #CCC;
+}
+
+a {
+    color: #3388ff;
+}
+
+#map {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background-color: #333;
+}
+
+.leaflet-canvas-layer {
+    opacity: 0.55;
+}
+/*Estilo del panel que aparece cuando le damos Hover con el mouse a la plantilla de los vientos de México */
+.leaflet-control-velocity {
+  font-size: 20px;
+  padding: 12px 17px;
+ /* min-width: 180px;*/
+}
+.boton-mapa{
+    position: absolute;
+        top: 20px;
+        right: 50%;
+        z-index: 1000; /* Esto lo pone por encima del mapa */
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+
+}
+.boton-mapa:hover {
+        background: #0056b3;
+    }

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>WRF-SMN Energía | Visualizador Pro</title>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="energia.css" />
+    <style>
+        /* Desactivar selección de texto */
+        body { 
+            margin:0; background:#000; font-family: 'Segoe UI', Tahoma, sans-serif; color: white; overflow: hidden; 
+            user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+        }
+        #map { height:100vh; width: 100%; cursor: crosshair; background: #000; }
+
+        /* PANEL IZQUIERDO DE CONTROL */
+        #panel {
+            position:absolute; top:15px; left:15px; z-index:1000;
+            background:rgba(10, 10, 10, 0.95); padding:18px; border-radius:10px; 
+            border: 1px solid #444; width:240px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-height: 90vh; overflow-y: auto;
+        }
+
+        /* GRUPO INFERIOR IZQUIERDO (HOVER + INFO + LEYENDA) */
+        #bottom-left-container {
+            position: absolute; bottom: 30px; left: 20px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 10px; width: 360px;
+            pointer-events: none;
+        }
+
+        /* TOOLTIP ESTILO METADATOS */
+        #hover-info {
+            background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(5px);
+            padding: 12px 18px; border-radius: 4px; border-left: 4px solid #00d4ff;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            display: none; pointer-events: auto;
+        }
+        .hover-label { color: #00d4ff; text-transform: uppercase; font-weight: 900; font-size: 9px; letter-spacing: 2px; margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .hover-val { color: #fff; font-family: 'Consolas', monospace; font-weight: bold; font-size: 20px; }
+
+        #info-box {
+            background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(5px);
+            padding: 12px 18px; border-radius: 4px; border-left: 4px solid #00d4ff;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5); pointer-events: auto;
+        }
+        .info-header { font-size: 9px; color: #00d4ff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; font-weight: 900; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-label { color: #888; text-transform: uppercase; font-weight: bold; font-size: 9px; }
+        .info-val { color: #fff; font-family: 'Consolas', monospace; font-weight: bold; font-size: 14px; }
+        
+        .status-dot { height: 7px; width: 7px; background-color: #00d4ff; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 5px #00d4ff; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        #legend { 
+            background: rgba(10, 10, 10, 0.9); padding: 15px 18px; border-radius: 4px; 
+            border-left: 4px solid #00d4ff; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); pointer-events: auto;
+        }
+        .legend-title { font-size: 13px; text-align: center; font-weight: 900; margin-bottom: 10px; color: #00d4ff; text-transform: uppercase; }
+        .cbar { width: 100%; height: 18px; border: 1px solid #444; border-radius: 2px; }
+        .labels { display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: #fff; font-weight: bold; }
+
+        /* INTERFAZ GENERAL */
+        .label { font-size: 12px; color: #ffffff; text-transform: uppercase; margin: 18px 0 8px 0; letter-spacing: 1.5px; font-weight: 800; border-left: 3px solid #00d4ff; padding-left: 8px; }
+        button { width: 100%; margin: 4px 0; padding: 10px; background: #222; color: #ccc; border: 1px solid #444; cursor: pointer; border-radius: 5px; font-size: 12px; font-weight: 600; text-align: left; }
+        button.active { background: #007bff; color: white; border-color: #00aaff; box-shadow: 0 0 10px rgba(0,123,255,0.4); }
+        
+        .collapsible-header { background: #1a1a1a; padding: 12px; border-radius: 5px; border: 1px solid #333; cursor: pointer; display: flex; justify-content: space-between; margin-top: 15px; }
+        .collapsible-header span { font-size: 11px; font-weight: 800; color: #00d4ff; }
+        .collapsible-content { display: none; background: #0a0a0a; padding: 12px; border: 1px dotted #444; border-top: none; }
+        .collapsible-header.active + .collapsible-content { display: block; }
+        .slider-item { margin-bottom: 14px; }
+        .slider-item label { display: block; font-size: 10px; color: #00d4ff; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #00d4ff; }
+
+        /* ESTILO DEL SLIDER TIEMPO */
+        .time-slider-box { background: #1a1a1a; padding: 15px; border-radius: 5px; border: 1px solid #333; margin-top: 10px; }
+        .time-display { display: flex; justify-content: space-between; font-family: monospace; color: #00d4ff; font-size: 14px; margin-top: 8px; font-weight: bold; }
+        
+        .leaflet-control-attribution { display: none !important; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="panel">
+    <div style="text-align:center; color:#00d4ff; font-weight:900; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:10px; font-size: 16px;">
+        SISTEMA WRF-ENERGÍA
+    </div>
+    
+
+    <div class="label">Viento por Altura</div>
+    <button onclick="updateVar('viento_10m', this)" class="active">💨 Nivel 10m</button>
+    <button onclick="updateVar('viento_100m', this)">💨 Nivel 100m</button>
+    <button onclick="updateVar('viento_200m', this)">💨 Nivel 200m</button>
+
+    <div class="label">Energía Solar</div>
+    <button onclick="updateVar('solar_swdown', this)">☀️ Radiación GHI</button>
+
+    <div class="label">Pronóstico (0-72h)</div>
+    <div class="time-slider-box">
+        <input type="range" id="time-slider" min="0" max="72" step="6" value="0" oninput="updateHour(this.value)">
+        <div class="time-display">
+            <span>T+00h</span>
+            <span id="time-val">Actual</span>
+            <span>T+72h</span>
+        </div>
+    </div>
+
+    <div class="collapsible-header" onclick="this.classList.toggle('active')">
+        <span>AJUSTES DE FLUJO</span>
+        <span>▼</span>
+    </div>
+    <div class="collapsible-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span style="font-size:11px; color:#fff; font-weight: bold;">ANIMAR CAPA</span>
+            <input type="checkbox" id="windStream" checked onclick="loadData()">
+        </div>
+        <div class="slider-item"><label>Densidad</label><input type="range" id="opt-paths" min="500" max="15000" step="500" value="5000" oninput="loadData()"></div>
+        <div class="slider-item"><label>Velocidad</label><input type="range" id="opt-speed" min="0.001" max="0.02" step="0.001" value="0.008" oninput="loadData()"></div>
+        <div class="slider-item"><label>Opacidad</label><input type="range" id="opt-opacity" min="0.1" max="1.0" step="0.1" value="0.5" oninput="loadData()"></div>
+    </div>
+</div>
+
+<div id="map"></div>
+<a class="boton-mapa-leaflet" href="../demo/demo.html">Mapa JSON</a> <!--boton para el otro mapa-->
+
+<div id="bottom-left-container">
+    <div id="hover-info">
+        <div class="hover-label" id="hover-var-name">LECTURA ACTUAL</div>
+        <div class="hover-val" id="hover-value">--.-</div>
+    </div>
+
+    <div id="info-box">
+        <div class="info-header">Metadatos Energéticos</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Corrida</span>
+                <span id="date-corrida" class="info-val">--/--/--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Válido</span>
+                <span id="date-validez" class="info-val">--/--/--</span>
+            </div>
+        </div>
+        <div class="info-item" style="margin-top:8px; border-top:1px solid #222; padding-top:5px;">
+            <span class="info-label"><span class="status-dot"></span>Actualización Local</span>
+            <span id="date-update" class="info-val" style="font-size: 12px; color: #aaa;">Cargando...</span>
+        </div>
+    </div>
+
+    <div id="legend">
+        <div id="legend-title" class="legend-title">...</div>
+        <div id="legend-bar" class="cbar"></div>
+        <div id="legend-labels" class="labels"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3"></script>
+<!--<script src="dist/leaflet.canvaslayer.field.js"></script>-->
+<!--Hice el cambio porque en el archivo ZIP no venia la carpeta dist con las instrucciones para cargar los archovos ascci y lo cambie por un repositorio que tiene las indicaciones de cómo hacerlo-->
+<script src="https://ihcantabria.github.io/Leaflet.CanvasLayer.Field/dist/leaflet.canvaslayer.field.js"></script>
+
+<script>
+// Bloqueo F12 y Ctrl+U
+document.onkeydown = function(e) {
+    if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && [73,74,67].includes(e.keyCode)) || (e.ctrlKey && e.keyCode == 85)) return false;
+};
+
+const map = L.map('map', {
+    center: [23.5,-102], zoom: 5.5, minZoom:5, maxZoom:10, 
+    zoomControl:false, layers:[L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')]
+});
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+const coastline = L.geoJSON(null,{style:{color:'#fff',weight:1,opacity:0.5,fill:false}}).addTo(map);
+d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/land-10m.json',(e,w)=>{if(!e) coastline.addData(topojson.feature(w,w.objects.land));});
+
+const dataPath ="D/"; //Quite data/ porque la ubicación cambio en mi computadora
+let currentVar='viento_10m', currentHour=0, scalarLayer = null, vectorLayer = null;
+
+const windColors = ['#081d58','#253494','#225ea8','#1d91c0','#41b6c4','#7fcdbb','#edf8b1','#ffffd9','#fed976','#f03b20'];
+const solarColors = ['#000', '#300', '#900', '#f60', '#ff0', '#fff'];
+
+function loadData(){
+    if(scalarLayer) map.removeLayer(scalarLayer);
+    if(vectorLayer) map.removeLayer(vectorLayer);
+
+    const hStr = currentHour.toString().padStart(2, '0');
+    const t = Date.now();
+
+    // 1. Capa Escalar
+    d3.text(`${dataPath}${currentVar}_${hStr}h.asc?${t}`, (err, data) => {
+        if(err) return;
+        let field = L.ScalarField.fromASCIIGrid(data);
+        if(currentVar.includes('viento')) field.grid = field.grid.map(r=>r.map(v=>v!==null?v*3.6:null));
+        
+        let scale = currentVar.includes('viento') ? chroma.scale(windColors).domain([0, 100]) : chroma.scale(solarColors).domain([0, 1100]);
+        scalarLayer = L.canvasLayer.scalarField(field,{color:scale, opacity:0.8, interpolate:true}).addTo(map);
+
+        // Hover Info
+        scalarLayer.on('mousemove', (e) => {
+            if (e.value !== null) {
+                const unit = currentVar.includes('viento') ? "km/h" : "W/m²";
+                document.getElementById('hover-info').style.display = 'block';
+                document.getElementById('hover-var-name').innerText = currentVar.toUpperCase();
+                document.getElementById('hover-value').innerText = `${e.value.toFixed(1)} ${unit}`;
+            } else { document.getElementById('hover-info').style.display = 'none'; }
+        });
+        scalarLayer.on('mouseout', () => { document.getElementById('hover-info').style.display = 'none'; });
+    });
+
+    // 2. Capa Vectorial (Solo si es viento)
+    if(currentVar.includes('viento') && document.getElementById('windStream').checked){
+        const altura = currentVar.split('_')[1];
+        d3.text(`${dataPath}viento_u_${altura}_${hStr}h.asc?${t}`, (eU, u) => {
+            d3.text(`${dataPath}viento_v_${altura}_${hStr}h.asc?${t}`, (eV, v) => {
+                if(!eU && !eV){
+                    const vf = L.VectorField.fromASCIIGrids(u, v);
+                    vectorLayer = L.canvasLayer.vectorFieldAnim(vf, {
+                        paths: parseInt(document.getElementById('opt-paths').value),
+                        velocityScale: parseFloat(document.getElementById('opt-speed').value),
+                        opacity: parseFloat(document.getElementById('opt-opacity').value),
+                        color: 'white'
+                    }).addTo(map);
+                }
+            });
+        });
+    }
+    updateMetadata();
+    updateLegend();
+}
+
+function updateHour(h) {
+    currentHour = h;
+    document.getElementById('time-val').innerText = `+${h.padStart(2,'0')}h`;
+    loadData();
+}
+
+function updateVar(v, btn) {
+    currentVar = v;
+    document.querySelectorAll('#panel button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadData();
+}
+
+function updateMetadata() {
+    const now = new Date();
+    document.getElementById('date-update').innerText = now.toLocaleString();
+    document.getElementById('date-corrida').innerText = now.toLocaleDateString() + " 12Z";
+    const valid = new Date(now.getTime() + currentHour * 3600000);
+    document.getElementById('date-validez').innerText = valid.toLocaleDateString() + " " + valid.getHours() + ":00";
+}
+
+function updateLegend() {
+    const bar = document.getElementById("legend-bar"), title = document.getElementById("legend-title"), labels = document.getElementById("legend-labels");
+    labels.innerHTML = "";
+    if(currentVar.includes('viento')){
+        title.innerHTML = `Viento (${currentVar.split('_')[1]}) km/h`;
+        bar.style.background = `linear-gradient(to right, ${windColors.join(',')})`;
+        ["0","25","50","75","100+"].forEach(l => labels.innerHTML += `<span>${l}</span>`);
+    } else {
+        title.innerHTML = "Radiación Solar GHI (W/m²)";
+        bar.style.background = `linear-gradient(to right, ${solarColors.join(',')})`;
+        ["0","250","500","750","1000+"].forEach(l => labels.innerHTML += `<span>${l}</span>`);
+    }
+}
+
+loadData();
+</script>
+</body>
+</html>
