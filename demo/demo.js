@@ -228,10 +228,12 @@ function getWindAtPoint(lat, lon, windData) { // Esta función ayuda a saber cua
 }
 
 // convertir grados a dirección cardinal
+
 function getCardinal(deg) {
   const dirs = ["N","NE","E","SE","S","SW","W","NW"];
   return dirs[Math.round(deg / 45) % 8];
 }
+
 
 map.on("click", function(e) { // Detecta cuando haces click en el mapa
 
@@ -272,4 +274,4 @@ map.on("click", function(e) { // Detecta cuando haces click en el mapa
     `)
     .openOn(map);
 
-});
+}); 

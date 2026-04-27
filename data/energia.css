@@ -16,3 +16,94 @@
 .boton-mapa-leaflet:hover {
         background: #0056b3;
     }
+/*Estilo del logo del PINCC*/
+.panel-fijo-derecha {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1001; /* Un número alto para que no lo tape nada */
+        background: rgba(255, 255, 255, 0.9);
+        padding: 12px;
+        border-radius: 8px;
+        width: 180px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border: 1px solid #ddd;
+        pointer-events: auto; /* Permite hacer clic en el logo */
+    }
+
+    /* --- RESPONSIVE / MEDIA QUERIES --- */
+
+/* 1. Ajustes para Laptops y pantallas medianas (Evita el empalme) */
+@media (max-height: 850px) {
+    #panel {
+        width: 210px; /* Reducimos un poco el ancho */
+        padding: 12px;
+        font-size: 13px;
+    }
+    #bottom-left-container {
+        width: 300px; /* Reducimos ancho de leyenda e info */
+        bottom: 15px;
+        left: 15px;
+        gap: 5px;
+    }
+    .hover-val { font-size: 16px; }
+    .info-val { font-size: 12px; }
+    .label { margin: 10px 0 5px 0; }
+}
+
+/* 2. Ajustes para Tablets (iPad/Android) */
+@media (max-width: 992px) {
+    #panel {
+        top: 10px;
+        left: 10px;
+        width: 190px;
+    }
+    /* Si la pantalla es muy baja, colapsamos metadatos para que no choquen */
+    #info-box {
+        display: none; /* En tablets priorizamos la leyenda y el hover */
+    }
+    #bottom-left-container {
+        width: 250px;
+    }
+}
+
+/* 3. Ajustes para Móviles (Smartphones) */
+@media (max-width: 600px) {
+    /* El panel pasa a ser de ancho completo o casi completo y más compacto */
+    #panel {
+        width: calc(100% - 40px);
+        max-height: 35vh; /* Limitamos altura para ver el mapa */
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        border-radius: 15px 15px 0 0;
+        border-bottom: none;
+    }
+
+    #bottom-left-container {
+        top: 10px;
+        left: 10px;
+        bottom: auto;
+        width: 200px;
+    }
+
+    /* Ocultamos la leyenda en móvil para limpiar la vista */
+    #legend, #info-box {
+        display: none;
+    }
+
+    #hover-info {
+        display: block !important; /* Forzamos el hover arriba para ver lecturas */
+        background: rgba(10, 10, 10, 0.95);
+    }
+    
+    /* El logo del PINCC lo movemos para que no estorbe con el control de zoom */
+    .panel-fijo-derecha {
+        width: 100px !important;
+        padding: 5px !important;
+        top: 10px !important;
+        right: 10px !important;
+    }
+}

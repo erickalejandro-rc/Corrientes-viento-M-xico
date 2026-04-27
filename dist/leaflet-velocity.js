@@ -192,7 +192,7 @@ L.Control.Velocity = L.Control.extend({
     }
 
     var velocityAbs = Math.sqrt(Math.pow(uMs, 2) + Math.pow(vMs, 2));
-    var velocityDir = Math.atan2(uMs / velocityAbs, vMs / velocityAbs);
+    var velocityDir = Math.atan2(-uMs / velocityAbs, vMs / velocityAbs);/*Coloque signo negativo en el vector u ya que es el que se encargar del este y oeste al dar el opuesto , se arregla el problema */ 
     var velocityDirToDegrees = velocityDir * 180 / Math.PI + 180;
 
     if (angleConvention === "bearingCW" || angleConvention === "meteoCCW") {
