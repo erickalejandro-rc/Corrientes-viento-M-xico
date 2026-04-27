@@ -259,6 +259,12 @@ map.on("click", function(e) { // Detecta cuando haces click en el mapa
 
   var cardinal = getCardinal(direction);
 
+  // 2. Dirección de donde viene (Cálculo inverso)
+  // Simplemente invertimos los componentes u y v con el signo menos
+  var dirFrom = Math.atan2(-wind.u, -wind.v) * (180 / Math.PI);
+  if (dirFrom < 0) dirFrom += 360;
+  var cardinalFrom = getCardinal(dirFrom);
+
   //  POPUP para mostrar la información (tipo Windy)
   L.popup()
     .setLatLng(e.latlng)
@@ -270,6 +276,7 @@ map.on("click", function(e) { // Detecta cuando haces click en el mapa
         
         Velocidad: <strong>${speed.toFixed(1)} km/h</strong><br>
         Dirección: ${cardinal} (${direction.toFixed(0)}°)
+        <span style="color: #e67e22;">⬇</span> <strong>Viene de:</strong> ${cardinalFrom} (${dirFrom.toFixed(0)}°)<br>
       </div>
     `)
     .openOn(map);
