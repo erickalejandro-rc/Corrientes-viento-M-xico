@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>WRF-Solar | Visualizador</title>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        /* ESTILOS REGENERADOS PARA QUE SE VEA PROFESIONAL */
+        body { margin:0; background:#000; font-family: 'Segoe UI', Tahoma, sans-serif; color: white; overflow: hidden; }
+        #map { height:100vh; width: 100%; background: #000; }
+
+        #panel {
+            position:absolute; top:15px; left:15px; z-index:1000;
+            background:rgba(10, 10, 10, 0.95); padding:18px; border-radius:10px; 
+            border: 1px solid #444; width:240px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .label { font-size: 12px; color: #ffffff; text-transform: uppercase; margin: 18px 0 8px 0; letter-spacing: 1.5px; font-weight: 800; border-left: 3px solid #ffcc00; padding-left: 8px; }
+        
+        button { 
+            width: 100%; margin: 4px 0; padding: 10px; background: #222; color: #ccc; 
+            border: 1px solid #444; cursor: pointer; border-radius: 5px; font-size: 12px; font-weight: 600; text-align: left; 
+        }
+        button.active { background: #ffcc00; color: black; border-color: #fff; }
+
+        .time-slider-box { background: #1a1a1a; padding: 15px; border-radius: 5px; border: 1px solid #333; margin-top: 10px; }
+        .time-display { display: flex; justify-content: space-between; color: #ffcc00; font-size: 14px; margin-top: 8px; font-weight: bold; }
+        input[type=range] { width: 100%; accent-color: #ffcc00; }
+
+        #legend { 
+            position: absolute; bottom: 30px; left: 20px; z-index: 1000;
+            background: rgba(10, 10, 10, 0.9); padding: 15px 18px; border-radius: 4px; 
+            border-left: 4px solid #ffcc00; width: 300px;
+        }
+        .legend-title { font-size: 13px; text-align: center; font-weight: 900; margin-bottom: 10px; color: #ffcc00; text-transform: uppercase; }
+        .cbar { width: 100%; height: 18px; border: 1px solid #444; }
+        .labels { display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div id="panel">
+    <div style="text-align:center; color:#ffcc00; font-weight:900; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:10px;">
+        RADIACIÓN SOLAR GHI
+    </div>
+    
+    <div class="label">Variables Solares</div>
+    <button onclick="updateVar('solar_swdown', this)" class="active">☀️ Radiación Global (GHI)</button>
+
+    <div class="label">Línea del Tiempo</div>
+    <div class="time-slider-box">
+        <input type="range" id="time-slider" min="0" max="72" step="6" value="0" oninput="updateHour(this.value)">
+        <div class="time-display">
+            <span>T+0h</span>
+            <span id="time-val">Actual</span>
+            <span>T+72h</span>
+        </div>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<div id="legend">
+    <div id="legend-title" class="legend-title">Radiación Solar GHI (W/m²)</div>
+    <div id="legend-bar" class="cbar" style="background: linear-gradient(to right, #000, #900, #f60, #ff0, #fff);"></div>
+    <div id="legend-labels" class="labels">
+        <span>0</span><span>250</span><span>500</span><span>750</span><span>1000+</span>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+<script src="https://ihcantabria.github.io/Leaflet.CanvasLayer.Field/dist/leaflet.canvaslayer.field.js"></script>
+
+<script>
+    const map = L.map('map', {
+        center: [23.5, -102], zoom: 5, zoomControl: false,
+        layers: [L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')]
+    });
+
+    const dataPath = "D/"; // Asegúrate que la carpeta D esté junto a este HTML
+    let currentVar = 'solar_swdown', currentHour = 0, scalarLayer = null;
+
+    function loadData() {
+        if (scalarLayer) map.removeLayer(scalarLayer);
+        const hStr = currentHour.toString().padStart(2, '0');
+
+        d3.text(`${dataPath}${currentVar}_${hStr}h.asc`, (err, data) => {
+            if (err) {
+                console.error("Error cargando archivo:", err);
+                return;
+            }
+            let field = L.ScalarField.fromASCIIGrid(data);
+            let scale = chroma.scale(['#000', '#330000', '#990000', '#ff6600', '#ffff00', '#ffffff']).domain([0, 1100]);
+            
+            scalarLayer = L.canvasLayer.scalarField(field, {
+                color: scale, opacity: 0.8, interpolate: true
+            }).addTo(map);
+        });
+    }
+
+    function updateHour(h) {
+        currentHour = h;
+        document.getElementById('time-val').innerText = `+${h}h`;
+        loadData();
+    }
+
+    loadData();
+</script>
+</body>
+</html>
